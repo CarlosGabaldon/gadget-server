@@ -73,6 +73,9 @@ module Gadget::Controllers
              @title = c.attributes["title"]
           end
        
+        # TODO - parse via spec http://code.google.com/apis/gadgets/docs/spec.html#compliance 
+        # ...
+        # ...
        
          #4 Build the content
          @content = <<-"CONTENT"
