@@ -8,6 +8,7 @@ require 'uri'
 
 #= Setup
 #   $ sudo gem camping
+#   $ git clone git://github.com/CarlosGabaldon/gadget-server.git
 #= Run
 #  $ cd ./gadget-server
 #  $ camping gadget.rb
