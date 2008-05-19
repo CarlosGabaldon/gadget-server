@@ -11,6 +11,7 @@ require 'uri'
 #   $ git clone git://github.com/CarlosGabaldon/gadget-server.git
 #= Run
 #  $ cd ./gadget-server
+#  $ mkdir cache
 #  $ camping gadget.rb
 #  ..
 #  $ open http://0.0.0.0:3301/gadget?url=http://doc.examples.googlepages.com/magic-decoder.xml
