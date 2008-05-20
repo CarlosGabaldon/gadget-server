@@ -8,13 +8,12 @@ require 'uri'
 
 #= Setup
 #   $ sudo gem camping
-#   $ git clone git://github.com/CarlosGabaldon/gadget-server.git
 #= Run
 #  $ cd ./gadget-server
-#  $ mkdir cache
 #  $ camping gadget.rb
 #  ..
 #  $ open http://0.0.0.0:3301/gadget?url=http://doc.examples.googlepages.com/magic-decoder.xml
+#  $ open http://0.0.0.0:3301/gadget_data?url=http://doc.examples.googlepages.com/magic-decoder.xml&inline=true
 
 Camping.goes :Gadget
 
@@ -45,11 +44,45 @@ module Cache
   end
 end
 
+
+module Template
+  class Html
+    class << self
+      def build(content_data)
+        content = <<-"CONTENT"
+         <html>
+         	<head>
+         	<style type="text/css"></style>
+         	</head>
+         	<body>
+         	  <script src="http://code.google.com/ig/extern_js/f/CgJlbhICdXMrMAE4ACw/_Ky-X_zR8Mc.js" />
+         	  <script>
+         	      function sendRequest(iframe_id, service_name, args_list, remote_relay_url,callback, local_relay_url) 
+         	      {
+         	        _IFPC.call(iframe_id, service_name, args_list, remote_relay_url, callback,local_relay_url);
+         	      }
+                 var gv = gadgets.views;
+                 gv.requestNavigateTo = gv.getCurrentView = gv.getParams = errFunc;
+             </script>
+             <script>_et="";_IG_Prefs._parseURL("0");</script>
+             <script>_IG_Prefs._addAll("0", [["up_.lang","en"],["up_.country","us"],["up_synd","open"]]);</script>
+         		<div style="border: 0pt none ; margin: 0pt; padding: 0pt; overflow: hidden; width: 100%; height: auto;"> 
+         		#{content_data}
+         		</div>
+         	</body>
+         </html>
+        CONTENT
+      end
+    end
+  end
+end    
+
 module Gadget::Controllers
   
   class Server < R '/gadget_data'
      def get
        @url = @input[:url] 
+       @inline = @input[:inline]
        @cached = @input[:cached]
        @content_data = ""
        @content = ""
@@ -79,36 +112,18 @@ module Gadget::Controllers
         # ...
         # ...
        
-         #4 Build the content
-         @content = <<-"CONTENT"
-          <html>
-          	<head>
-          	<style type="text/css"></style>
-          	</head>
-          	<body>
-          	  <script src="http://code.google.com/ig/extern_js/f/CgJlbhICdXMrMAE4ACw/_Ky-X_zR8Mc.js" />
-          	  <script>
-          	      function sendRequest(iframe_id, service_name, args_list, remote_relay_url,callback, local_relay_url) 
-          	      {
-          	        _IFPC.call(iframe_id, service_name, args_list, remote_relay_url, callback,local_relay_url);
-          	      }
-                  var gv = gadgets.views;
-                  gv.requestNavigateTo = gv.getCurrentView = gv.getParams = errFunc;
-              </script>
-              <script>_et="";_IG_Prefs._parseURL("0");</script>
-              <script>_IG_Prefs._addAll("0", [["up_.lang","en"],["up_.country","us"],["up_synd","open"]]);</script>
-          		<div style="border: 0pt none ; margin: 0pt; padding: 0pt; overflow: hidden; width: 100%; height: auto;"> 
-          		#{@content_data}
-          		</div>
-          	</body>
-          </html>
-         CONTENT
-       
          #5 Cache the content
-         Cache::Store.put(@url, @content)
+         Cache::Store.put(@url, @content_data)
+         
+         @content = @content_data
        end
        
-       #6 Render the content
+       #6 Template the content
+       unless @inline != nil && @inline == "true"
+         @content = Template::Html.build(@content)
+       end
+       
+       #7 Render the content
        if @url
          render :gadget_data
        else
