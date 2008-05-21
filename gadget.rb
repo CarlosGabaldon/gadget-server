@@ -83,12 +83,12 @@ module Gadget::Controllers
      def get
        @url = @input[:url] 
        @inline = @input[:inline]
-       @cached = @input[:cached]
+       @nocache = @input[:nocache]
        @content_data = ""
        @content = ""
        
        #1 Fetch content from cache
-       @content = Cache::Store.get(@url) if @cached != nil && @cached != "false"
+       @content = Cache::Store.get(@url) unless @nocache == "true"
        
        if @content == nil || @content == ""
          #2 Fetch the xml
@@ -136,7 +136,7 @@ module Gadget::Controllers
   class Widget < R '/gadget'
     def get
       @url = @input[:url]
-      @cached = @input[:cached]
+      @nocache = @input[:nocache]
       @domain = "0.0.0.0:3301"
       #@domain = "10.8.9.35:3301"
       
@@ -158,7 +158,7 @@ module Gadget::Views
   def gadget
     div :style => "width: 250px; height: 250px" do
       h4 @title 
-      iframe :src => "http://#{@domain}/gadget_data?url=#{@url}&cached=#{@cached}", 
+      iframe :src => "http://#{@domain}/gadget_data?url=#{@url}&nocache=#{@nocache}", 
         :frameborder => 0, 
         :style => "border: 0pt none ; margin: 0pt; padding: 0pt; overflow: hidden; width: 100%; height: 100%;"
     end
