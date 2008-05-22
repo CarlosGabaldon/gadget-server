@@ -4,6 +4,7 @@ require 'camping'
 require 'open-uri'
 require 'rexml/document'
 require 'uri'
+require 'cgi'
 #require 'memcache'
 
 #= Setup
@@ -55,7 +56,7 @@ module Template
          	<style type="text/css"></style>
          	</head>
          	<body>
-         	  <script src="http://code.google.com/ig/extern_js/f/CgJlbhICdXMrMAE4ACw/_Ky-X_zR8Mc.js" />
+         	  <script src="http://code.google.com/ig/extern_js/f/CgJlbhICdXMrMAE4ACw/LuEUfb0hR1Q.js" />
          	  <script>
          	      function sendRequest(iframe_id, service_name, args_list, remote_relay_url,callback, local_relay_url) 
          	      {
@@ -65,10 +66,15 @@ module Template
                  gv.requestNavigateTo = gv.getCurrentView = gv.getParams = errFunc;
              </script>
              <script>_et="";_IG_Prefs._parseURL("0");</script>
-             <script>_IG_Prefs._addAll("0", [["up_.lang","en"],["up_.country","us"],["up_synd","open"]]);</script>
+             <script>
+              _IG_Prefs._addAll("0", [["up_mycalories","800"],["up_mychoice","0"],["up_.lang","en"],["up_.country","us"],["up_synd","open"]]);
+             </script>
          		<div style="border: 0pt none ; margin: 0pt; padding: 0pt; overflow: hidden; width: 100%; height: auto;"> 
          		#{content_data}
          		</div>
+         		<script>
+              _IG_TriggerEvent("domload");
+            </script>
          	</body>
          </html>
         CONTENT
@@ -84,6 +90,10 @@ module Gadget::Controllers
        @url = @input[:url] 
        @inline = @input[:inline]
        @nocache = @input[:nocache]
+       
+       #Hangman variables
+       @module_id = @input[:mid]
+       
        @content_data = ""
        @content = ""
        
@@ -107,6 +117,10 @@ module Gadget::Controllers
          doc.elements.each('Module/ModulePrefs') do |c|
              @title = c.attributes["title"]
           end
+       
+       
+        #3.1 Hangman variables
+        @content_data = @content_data.sub('__MODULE_ID__', @module_id)
        
         # TODO - parse via spec http://code.google.com/apis/gadgets/docs/spec.html#compliance 
         # ...
@@ -137,10 +151,24 @@ module Gadget::Controllers
     def get
       @url = @input[:url]
       @nocache = @input[:nocache]
+      @module_id = @input[:mid]
       @domain = "0.0.0.0:3301"
       #@domain = "10.8.9.35:3301"
       
       render :gadget
+    end
+  end
+  
+  class Xml < R '/ig/jsonp'
+    def get
+      @url = @input[:url]
+      open(@url) do |file|
+        @xml = file.read
+       end
+       
+       @xml = "{'#{@url}' : { 'body' : #{CGI.escape(@xml)} ,'rc': 200 }}"
+      
+       render :xml
     end
   end
 
@@ -158,7 +186,7 @@ module Gadget::Views
   def gadget
     div :style => "width: 250px; height: 250px" do
       h4 @title 
-      iframe :src => "http://#{@domain}/gadget_data?url=#{@url}&nocache=#{@nocache}", 
+      iframe :src => "http://#{@domain}/gadget_data?url=#{@url}&nocache=#{@nocache}&mid=#{@module_id}", 
         :frameborder => 0, 
         :style => "border: 0pt none ; margin: 0pt; padding: 0pt; overflow: hidden; width: 100%; height: 100%;"
     end
@@ -166,6 +194,10 @@ module Gadget::Views
   
   def gadget_data
     @content
+  end
+  
+  def xml
+    @xml
   end
 
   def no_gadget
