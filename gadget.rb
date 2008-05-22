@@ -4,7 +4,7 @@ require 'camping'
 require 'open-uri'
 require 'rexml/document'
 require 'uri'
-require 'cgi'
+require 'json'
 #require 'memcache'
 
 #= Setup
@@ -15,6 +15,7 @@ require 'cgi'
 #  ..
 #  $ open http://0.0.0.0:3301/gadget?url=http://doc.examples.googlepages.com/magic-decoder.xml
 #  $ open http://0.0.0.0:3301/gadget_data?url=http://doc.examples.googlepages.com/magic-decoder.xml&inline=true
+#  $ open http://0.0.0.0:3301/gadget?url=http://doc.examples.googlepages.com/breakfast-menu.xml&mid=20
 
 Camping.goes :Gadget
 
@@ -56,7 +57,7 @@ module Template
          	<style type="text/css"></style>
          	</head>
          	<body>
-         	  <script src="http://code.google.com/ig/extern_js/f/CgJlbhICdXMrMAE4ACw/LuEUfb0hR1Q.js" />
+         	  <script src="http://www.google.com/ig/extern_js/f/CgJlbhICdXMrMAE4ACw/LuEUfb0hR1Q.js" />
          	  <script>
          	      function sendRequest(iframe_id, service_name, args_list, remote_relay_url,callback, local_relay_url) 
          	      {
@@ -159,16 +160,24 @@ module Gadget::Controllers
     end
   end
   
-  class Xml < R '/ig/jsonp'
+  class Json < R '/ig/jsonp'
     def get
       @url = @input[:url]
       open(@url) do |file|
         @xml = file.read
        end
        
-       @xml = "{'#{@url}' : { 'body' : #{CGI.escape(@xml)} ,'rc': 200 }}"
+       escaped = @xml.gsub('<', '\\x3c').gsub('>', '\\x3e').gsub('=', '\\x3d').gsub('"', '\\x22')
+  
+       @json = "{'#{@url}' : { 'body' : '#{escaped}' ,'rc': 200 }}"
+       
+       #@json = { '#{@url}' => {
+       #                         'body' => @xml,
+        #                        'rc' => 200 
+        #                      }
+         #       }.to_json
       
-       render :xml
+       render :json
     end
   end
 
@@ -196,8 +205,8 @@ module Gadget::Views
     @content
   end
   
-  def xml
-    @xml
+  def json
+    @json
   end
 
   def no_gadget
