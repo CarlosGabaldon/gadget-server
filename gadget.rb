@@ -4,7 +4,7 @@ require 'camping'
 require 'open-uri'
 require 'rexml/document'
 require 'uri'
-require 'json'
+
 #require 'memcache'
 
 #= Setup
@@ -121,7 +121,7 @@ module Gadget::Controllers
        
        
         #3.1 Hangman variables
-        @content_data = @content_data.sub('__MODULE_ID__', @module_id)
+        @content_data = @content_data.sub('__MODULE_ID__', @module_id) unless @module_id == nil
        
         # TODO - parse via spec http://code.google.com/apis/gadgets/docs/spec.html#compliance 
         # ...
@@ -160,24 +160,36 @@ module Gadget::Controllers
     end
   end
   
-  class Json < R '/ig/jsonp'
+  class Json < R '/ig/jsonp' #'/ig/feedjson 
     def get
       @url = @input[:url]
-      open(@url) do |file|
+
+      @json = "throw 1; < don't be evil' >{'#{@url}' : { 'body' : '#{self.fetchXml(@url)}' ,'rc': 200 }}"
+       
+      render :json
+    end
+    
+    def post
+      @url = @input[:url]
+      
+      @json = "throw 1; < don't be evil' >{'#{@url}' : { 'body' : '#{self.fetchXml(@url)}' ,'rc': 200 }}"
+       
+      render :json
+    end
+    
+    private
+    def fetchXml(url)
+      open(url) do |file|
         @xml = file.read
        end
        
        escaped = @xml.gsub('<', '\\x3c').gsub('>', '\\x3e').gsub('=', '\\x3d').gsub('"', '\\x22')
-  
-       @json = "{'#{@url}' : { 'body' : '#{escaped}' ,'rc': 200 }}"
        
-       #@json = { '#{@url}' => {
-       #                         'body' => @xml,
-        #                        'rc' => 200 
-        #                      }
-         #       }.to_json
-      
-       render :json
+       data = ""
+       
+       escaped.each {|l| data += l.chomp}
+       
+       return data
     end
   end
 
